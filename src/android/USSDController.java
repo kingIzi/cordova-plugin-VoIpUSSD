@@ -45,6 +45,7 @@ public class USSDController implements USSDInterface, USSDApi {
     protected static final String KEY_ERROR = "KEY_ERROR";
 
     protected Boolean isRunning = false;
+    protected Boolean send = false;
 
     private USSDInterface ussdInterface;
 
@@ -72,7 +73,7 @@ public class USSDController implements USSDInterface, USSDApi {
      * @param map             Map of Login and problem messages
      * @param callbackInvoke  a callback object from return answer
      */
-    public void callUSSDInvoke(String ussdPhoneNumber, HashMap<String, HashSet<String>> map, CallbackInvoke callbackInvoke) {
+    public void callUSSDInvoke(String ussdPhoneNumber, HashMap<String, HashSet<String>> map, CallbackInvoke callbackInvoke) {        
         callUSSDInvoke(ussdPhoneNumber, 0, map, callbackInvoke);
     }
 
@@ -84,7 +85,7 @@ public class USSDController implements USSDInterface, USSDApi {
      * @param map             Map of Login and problem messages
      * @param callbackInvoke  a callback object from return answer
      */
-    public void callUSSDOverlayInvoke(String ussdPhoneNumber, HashMap<String, HashSet<String>> map, CallbackInvoke callbackInvoke) {
+    public void callUSSDOverlayInvoke(String ussdPhoneNumber, HashMap<String, HashSet<String>> map, CallbackInvoke callbackInvoke) {        
         callUSSDOverlayInvoke(ussdPhoneNumber, 0, map, callbackInvoke);
     }
 
@@ -98,6 +99,7 @@ public class USSDController implements USSDInterface, USSDApi {
      */
     @SuppressLint("MissingPermission")
     public void callUSSDInvoke(String ussdPhoneNumber, int simSlot, HashMap<String, HashSet<String>> map, CallbackInvoke callbackInvoke) {
+		send=false;
         this.callbackInvoke = callbackInvoke;
         this.map = map;
         if (verifyAccesibilityAccess(context)) {
@@ -118,6 +120,7 @@ public class USSDController implements USSDInterface, USSDApi {
      */
     @SuppressLint("MissingPermission")
     public void callUSSDOverlayInvoke(String ussdPhoneNumber, int simSlot, HashMap<String, HashSet<String>> map, CallbackInvoke callbackInvoke) {
+		send=false;
         this.callbackInvoke = callbackInvoke;
         this.map = map;
         if (verifyAccesibilityAccess(context) && verifyOverLay(context)) {
@@ -187,19 +190,43 @@ public class USSDController implements USSDInterface, USSDApi {
             if (phoneAccountHandleList != null && phoneAccountHandleList.size() > simSlot)
                 intent.putExtra("android.telecom.extra.PHONE_ACCOUNT_HANDLE", phoneAccountHandleList.get(simSlot));
         }
-
         return intent;
     }
 
+    /**
+     * Send a string by using inputText from USSD Dialog
+     * @param text string which contains info to be sent
+     */
     public void sendData(String text) {
         USSDService.send(text);
     }
 
+    /**
+     * Send a string by using  the inputText from USSD Dialog
+     *
+     * @param text string which contains info to be sent
+     * @param callbackMessage response callback
+     */
     public void send(String text, CallbackMessage callbackMessage) {
         this.callbackMessage = callbackMessage;
+        this.send = true;
         ussdInterface.sendData(text);
     }
 
+    /**
+     * Press the first button od USSD Dialog as to cancel operation
+     */
+    @Override
+    public void cancel() {
+        USSDService.cancel();
+    }
+
+    /**
+     * Check whether USSD Accessibility was enabled or not
+     *
+     * @param context Application context
+     * @return
+     */
     public static boolean verifyAccesibilityAccess(Context context) {
         boolean isEnabled = USSDController.isAccessiblityServicesEnable(context);
         if (!isEnabled) {
@@ -216,6 +243,12 @@ public class USSDController implements USSDInterface, USSDApi {
         return isEnabled;
     }
 
+    /**
+     * Check whether the overlay capacity was enabled or not
+     *
+     * @param context Application context
+     * @return
+     */
     public static boolean verifyOverLay(Context context) {
         boolean m_android_doesnt_grant = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
                 && !Settings.canDrawOverlays(context);
