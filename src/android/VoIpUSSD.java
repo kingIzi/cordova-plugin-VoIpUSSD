@@ -22,6 +22,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import android.content.pm.PackageManager;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+import java.util.concurrent.TimeUnit;
 
 //import io.sybox.easyshare.MainActivity; //(io.sybox.easyshare: this must be replaced by the name of your main package)
 
@@ -84,42 +87,40 @@ public class VoIpUSSD extends CordovaPlugin {
     }
 
     private void executeSimpleUssd(String phone, CallbackContext callbackContext){
-        String phoneNumber = phone;
-        ussdApi.callUSSDInvoke(phoneNumber, map, new USSDController.CallbackInvoke() {
-            @Override
-            public void responseInvoke(String message) {
-                result += "\n-\n" + message;
-				PluginResult result_1 = new PluginResult(PluginResult.Status.OK, result);
-				result_1.setKeepCallback(true);
-				callbackContext.sendPluginResult(result_1); 
-                // first option list - select option 1
-                ussdApi.send("6", new USSDController.CallbackMessage() {
-                    @Override
-                    public void responseMessage(String message) {
-                        result += "\n-\n" + message;
-						PluginResult result_2 = new PluginResult(PluginResult.Status.OK, result);
-						result_2.setKeepCallback(true);
-						callbackContext.sendPluginResult(result_2); 
-                        // second option list - select option 1
-                        ussdApi.send("2", new USSDController.CallbackMessage() {
-                            @Override
-                            public void responseMessage(String message) {
-                                result += "\n-\n" + message;
-								PluginResult result_3  = new PluginResult(PluginResult.Status.OK, result);
-								result_3.setKeepCallback(true);
-								callbackContext.sendPluginResult(result_3); 
-                            }
-                        });
-                    }
+        String[] commands = phone.split(",");
+        ussdApi.callUSSDInvoke(commands[0], map, new USSDController.CallbackInvoke() {
+        @Override
+        public void responseInvoke(String message) {
+          PluginResult result_1 = new PluginResult(PluginResult.Status.OK, result);
+          result_1.setKeepCallback(true);
+          callbackContext.sendPluginResult(result_1);
+          Observable
+            .just("6", "2", "1", "2", commands[1], commands[2],commands[3],commands[4])
+            .delay(500, TimeUnit.MILLISECONDS) // add a delay of 500ms between each emission
+            .concatMap(res -> {
+              return Observable.create(emitter -> {
+                ussdApi.send(res, new USSDController.CallbackMessage() {
+                  @Override
+                  public void responseMessage(String message) {
+                    emitter.onNext(message);
+                    emitter.onComplete();
+                  }
                 });
-
-            }
-
-            @Override
-            public void over(String message) {
-                result += "\n-\n" + message;
-            }
-        });
+              });
+            })
+            .subscribeOn(Schedulers.io())
+            .observeOn(Schedulers.io())
+            .subscribe(res -> {
+              PluginResult result_4 = new PluginResult(PluginResult.Status.OK, result);
+              result_4.setKeepCallback(true);
+              callbackContext.sendPluginResult(result_4);
+            });
+        }
+        @Override
+        public void over(String message) {
+          result += "\n-\n" + message;
+        }
+      });
     }
 
 	private boolean hasPermission() {
