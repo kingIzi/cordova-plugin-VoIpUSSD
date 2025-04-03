@@ -6,6 +6,7 @@ import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.os.Build;
@@ -14,12 +15,16 @@ import android.os.IBinder;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
 import android.app.Application;
 import android.content.res.Resources;
+import android.widget.TextView;
+
+import capacitor.cordova.android.plugins.R;
 
 /**
  * SplashLoadingService for Android splashing dialog
@@ -29,7 +34,7 @@ import android.content.res.Resources;
  * @since 1.1.d
  */
 public class SplashLoadingService extends Service {
-
+    private LinearLayout overlayView;
     private LinearLayout layout;
     private WindowManager wm;
 
@@ -68,8 +73,12 @@ public class SplashLoadingService extends Service {
                                 PixelFormat.RGB_565);
 
         ImageView imageView = new ImageView(this);
-        //imageView.setImageResource(R.drawable.favico);
+        imageView.setImageResource(R.drawable.logo);
         imageView.setPaddingRelative(0,padding_in_px,0,padding_in_px);
+        FrameLayout imageFrame = new FrameLayout(this);
+        imageFrame.setBackgroundColor(Color.parseColor("#FFFFFF"));
+        imageFrame.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,FrameLayout.LayoutParams.MATCH_PARENT));
+        imageFrame.addView(imageView);
         LinearLayout.LayoutParams params_ll = new LinearLayout
                 .LayoutParams(LinearLayout.MarginLayoutParams.MATCH_PARENT, 0);
         params_ll.gravity = Gravity.CENTER;
@@ -80,19 +89,47 @@ public class SplashLoadingService extends Service {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT);
         rp.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
-        relativeLayout.addView(imageView,rp);
+        relativeLayout.addView(imageFrame,rp);
         layout.addView(relativeLayout, params_ll);
 
         GifImageView gifImageView = new GifImageView(this);
-        //gifImageView.setGifImageResource(R.drawable.loading);
+        gifImageView.setGifImageResource(R.drawable.loading_7528_256);
         gifImageView.setPaddingRelative(0,padding_in_px,0,padding_in_px);
+//
+//        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+//        layoutParams.gravity = Gravity.CENTER; // Center the view horizontally and vertically
+//
+//        gifImageView.setLayoutParams(layoutParams);
+//
+//        overlayView = new FrameLayout(this);
+//        overlayView.setBackgroundColor(Color.parseColor("#FFFFFF"));
+//        overlayView.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,FrameLayout.LayoutParams.MATCH_PARENT));
+//        overlayView.addView(gifImageView);
+
+      overlayView = new LinearLayout(this);
+      overlayView.setBackgroundColor(Color.parseColor("#FFFFFF"));
+      overlayView.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+      overlayView.setOrientation(LinearLayout.VERTICAL); // Set the orientation to vertical
+      overlayView.setGravity(Gravity.CENTER); // Center all child views
+
+      gifImageView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+      TextView textView = new TextView(this);
+      textView.setText("Payment in progress...");
+      textView.setTextSize(16); // Set the text size
+      textView.setTextColor(Color.BLACK); // Set the text color
+      textView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+      overlayView.addView(gifImageView);
+      overlayView.addView(textView);
+
 
         relativeLayout = new RelativeLayout(this);
         rp = new RelativeLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT);
         rp.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
-        relativeLayout.addView(gifImageView,rp);
+        relativeLayout.addView(overlayView,rp);
 
         layout.addView(relativeLayout,params_ll);
 
